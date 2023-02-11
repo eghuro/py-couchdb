@@ -18,15 +18,15 @@ class Resource(object):
 
         if not session:
             self.session = requests.session()
-
-            self.session.headers.update({"accept": "application/json",
-                                         "content-type": "application/json"})
-            self._authenticate(credentials, authmethod)
-
-            if not full_commit:
-                self.session.headers.update({'X-Couch-Full-Commit': 'false'})
         else:
             self.session = session
+        self.headers = self.session.headers
+        self.headers.update({"accept": "application/json",
+                             "content-type": "application/json"})
+        self._authenticate(credentials, authmethod)
+
+        if not full_commit:
+            self.headers.update({'X-Couch-Full-Commit': 'false'})
         self.session.verify = verify
 
     def _authenticate(self, credentials, method):
@@ -38,7 +38,7 @@ class Resource(object):
             data = utils.force_bytes(json.dumps(data))
 
             post_url = utils.urljoin(self.base_url, "_session")
-            r = self.session.post(post_url, data=data)
+            r = self.session.post(post_url, data=data, headers=self.headers)
             if r.status_code != 200:
                 raise exceptions.AuthenticationFailed()
 
@@ -75,10 +75,9 @@ class Resource(object):
     def request(self, method, path, params=None, data=None,
                 headers=None, stream=False, **kwargs):
 
-        if headers is None:
-            headers = {}
-
-        headers.setdefault('Accept', 'application/json')
+        effective_headers = self.headers.copy()
+        effective_headers.update(headers or {})
+        effective_headers.setdefault('Accept', 'application/json')
 
         if path:
             if not isinstance(path, (list, tuple)):
@@ -89,7 +88,7 @@ class Resource(object):
 
         response = self.session.request(method, url, stream=stream,
                                         data=data, params=params,
-                                        headers=headers, **kwargs)
+                                        headers=effective_headers, **kwargs)
         # Ignore result validation if
         # request is with stream mode
 
