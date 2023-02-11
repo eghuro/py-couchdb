@@ -86,6 +86,7 @@ class Server(object):
     :param authmethod: specify a authentication method. By default "basic"
                        method is used but also exists "session" (that requires
                        some server configuration changes).
+    :param session: an optional requests session object.
 
     .. versionchanged: 1.4
        Set basic auth method as default instead of session method.
@@ -96,10 +97,11 @@ class Server(object):
     """
 
     def __init__(self, base_url=DEFAULT_BASE_URL, full_commit=True,
-                 authmethod="basic", verify=False):
+                 authmethod="basic", verify=False, session=None):
 
         self.base_url, credentials = utils.extract_credentials(base_url)
         self.resource = Resource(self.base_url, full_commit,
+                                 session=session,
                                  credentials=credentials,
                                  authmethod=authmethod,
                                  verify=verify)
